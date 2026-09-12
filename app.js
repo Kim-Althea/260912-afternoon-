@@ -14,6 +14,7 @@ import {
   getDocs,
   getDoc,
   setDoc,
+  updateDoc,
   query,
   orderBy
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
@@ -130,7 +131,7 @@ async function toggleUserRole() {
 
 // 메모를 읽어 옵니다.
 // Firestore의 memos 컬렉션에서 가져오며, 순서는 orderBy("createdAt") 으로 맞춥니다.
-// 백엔드 2: 메모를 불러올 때 로그인한 사람의 uid와 글쓴이(userName) 정보도 함께 가져옵니다.
+// 백엔드 2: 메모를 불러올 때 로그인한 사람의 uid와 글쓴이(userName), AI 코멘트 정보도 함께 가져옵니다.
 async function loadMemos() {
   const q = query(collection(db, "memos"), orderBy("createdAt"));
   const querySnapshot = await getDocs(q);
@@ -143,11 +144,180 @@ async function loadMemos() {
       createdAt: data.createdAt,
       uid: data.uid,           // 작성자 uid 가져오기
       userName: data.userName, // 글쓴이(이름) 가져오기
-      role: data.role          // 역할(TEACHER 또는 STUDENT) 가져오기
+      role: data.role,         // 역할(TEACHER 또는 STUDENT) 가져오기
+      aiComment: data.aiComment, // AI 선생님 코멘트
+      aiCommentedAt: data.aiCommentedAt // 코멘트 작성 시각
     });
   });
   return memos;
 }
+
+// ===================================================
+// Gemini AI 코멘트 연동 함수 (Vercel 서버리스 및 로컬 테스트 지원)
+// ===================================================
+
+// Gemini API를 호출하여 따뜻한 격려 코멘트를 받아오는 함수
+async function fetchAiComment(text) {
+  // 개인정보 보호 원칙: 학생의 이름, 이메일, UID는 절대 Gemini로 전송하지 않고 메모 내용만 전달합니다.
+  try {
+    const response = await fetch("/api/gemini", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ text })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return data.comment;
+    }
+
+    // Vercel 배포 전 로컬 Live Server(127.0.0.1:5500) 환경인 경우 404가 발생하므로 로컬 직접 호출로 전환
+    if (response.status === 404) {
+      return await fallbackLocalGemini(text);
+    }
+
+    const errData = await response.json().catch(() => ({}));
+    throw new Error(errData.error || `서버 오류 (${response.status})`);
+  } catch (err) {
+    if (err.message.includes("Failed to fetch") || err.message.includes("404")) {
+      return await fallbackLocalGemini(text);
+    }
+    throw err;
+  }
+}
+
+// 로컬 실습 환경(Live Server)에서 즉시 테스트할 수 있도록 지원하는 fallback 함수
+async function fallbackLocalGemini(text) {
+  let localKey = localStorage.getItem("LOCAL_GEMINI_API_KEY");
+  if (!localKey) {
+    localKey = prompt(
+      "💡 현재 로컬(Live Server) 환경에서는 Vercel 서버리스 함수(/api/gemini)가 동작하지 않습니다.\n\n로컬에서 바로 AI 코멘트를 테스트하시려면 Google AI Studio에서 무료 발급받은 Gemini API 키를 입력해 주세요 (브라우저에만 임시 저장됩니다):\n\n(※ Vercel 배포 후에는 환경변수 GEMINI_API_KEY를 통해 자동으로 안전하게 작동합니다)"
+    );
+    if (!localKey || localKey.trim() === "") {
+      throw new Error("Gemini API 키가 입력되지 않아 취소되었습니다.");
+    }
+    localStorage.setItem("LOCAL_GEMINI_API_KEY", localKey.trim());
+  }
+
+  // Google Gemini API 최신 무료 모델(gemini-2.0-flash) 직접 호출
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${localKey.trim()}`;
+  const payload = {
+    system_instruction: {
+      parts: [
+        {
+          text: "당신은 초·중등학교 담벼락 게시판의 친절하고 따뜻한 AI 선생님입니다. 학생이 남긴 메모 내용을 읽고, 1~2문장의 따뜻한 공감과 칭찬, 격려의 피드백을 작성해 주세요. 다정하고 부드러운 말투와 어울리는 이모지를 사용해 주세요."
+        }
+      ]
+    },
+    contents: [
+      {
+        parts: [
+          {
+            text: `학생 메모: "${text.trim()}"`
+          }
+        ]
+      }
+    ],
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 150
+    }
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    if (res.status === 400 || res.status === 403) {
+      localStorage.removeItem("LOCAL_GEMINI_API_KEY");
+    }
+    throw new Error(err.error?.message || "Gemini API 호출에 실패했습니다.");
+  }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || "친구의 소중한 생각, 선생님도 함께 응원할게요! ✨";
+}
+
+// 개별 메모에 AI 코멘트를 생성하고 Firestore에 저장하는 함수 (교사 전용)
+async function generateAiCommentForMemo(memoId, memoText, btnElement) {
+  if (currentRole !== "TEACHER") {
+    alert("AI 코멘트 생성은 교사 권한이 필요합니다! 🔒");
+    return;
+  }
+
+  if (btnElement) {
+    btnElement.disabled = true;
+    btnElement.textContent = "⏳ AI 생각 중...";
+  }
+
+  try {
+    const comment = await fetchAiComment(memoText);
+    const memoRef = doc(db, "memos", memoId);
+    await updateDoc(memoRef, {
+      aiComment: comment,
+      aiCommentedAt: Date.now()
+    });
+    await render();
+  } catch (err) {
+    console.error("AI 코멘트 생성 실패:", err);
+    alert("AI 코멘트 생성 중 오류가 발생했습니다: " + err.message);
+    if (btnElement) {
+      btnElement.disabled = false;
+      btnElement.textContent = "✨ AI 코멘트 달기";
+    }
+  }
+}
+
+// 모든 메모에 AI 코멘트를 일괄 생성하는 함수 (교사 전용)
+async function handleBulkAiComments() {
+  if (currentRole !== "TEACHER") return;
+
+  const memos = await loadMemos();
+  const targetMemos = memos.filter(m => !m.aiComment);
+
+  if (targetMemos.length === 0) {
+    alert("이미 모든 메모에 AI 코멘트가 작성되어 있습니다! 🎉");
+    return;
+  }
+
+  if (!confirm(`코멘트가 없는 ${targetMemos.length}개의 메모에 AI 코멘트를 일괄 작성하시겠습니까?`)) {
+    return;
+  }
+
+  const bulkBtn = document.querySelector(".btn-bulk-ai");
+  if (bulkBtn) {
+    bulkBtn.disabled = true;
+    bulkBtn.textContent = "⏳ AI 전체 작성 중...";
+  }
+
+  let successCount = 0;
+  for (const m of targetMemos) {
+    try {
+      const comment = await fetchAiComment(m.text);
+      await updateDoc(doc(db, "memos", m.id), {
+        aiComment: comment,
+        aiCommentedAt: Date.now()
+      });
+      successCount++;
+    } catch (err) {
+      console.warn(`메모(${m.id}) AI 코멘트 생성 건너뜀:`, err);
+    }
+  }
+
+  await render();
+  alert(`${successCount}개의 메모에 AI 코멘트가 성공적으로 등록되었습니다! 🤖✨`);
+  if (bulkBtn) {
+    bulkBtn.disabled = false;
+    bulkBtn.textContent = "✨ 전체 AI 코멘트 달기";
+  }
+}
+
 
 // 메모를 새로 씁니다.
 // 백엔드 2: 로그인하지 않은 사람은 메모를 아예 쓰지 못하게 막고,
@@ -237,6 +407,19 @@ function makeMemo(memo) {
   span.textContent = memo.text;
   div.appendChild(span);
 
+  // AI 선생님 코멘트가 있는 경우 따뜻한 말풍선으로 표시
+  if (memo.aiComment) {
+    const aiBox = document.createElement("div");
+    aiBox.className = "memo-ai-comment";
+    aiBox.innerHTML = `
+      <div class="ai-comment-header">
+        <span class="ai-robot-badge">🤖 AI 선생님 한마디</span>
+      </div>
+      <div class="ai-comment-content">${memo.aiComment}</div>
+    `;
+    div.appendChild(aiBox);
+  }
+
   // 작성자 정보 및 역할(교사/학생) 뱃지 표시
   if (memo.userName) {
     const author = document.createElement("div");
@@ -250,6 +433,20 @@ function makeMemo(memo) {
     author.appendChild(roleBadge);
     author.appendChild(document.createTextNode(" " + memo.userName));
     div.appendChild(author);
+  }
+
+  // 교사(TEACHER) 전용: AI 코멘트 달기/재생성 버튼
+  if (currentRole === "TEACHER") {
+    const aiBtn = document.createElement("button");
+    aiBtn.type = "button";
+    aiBtn.className = "btn-ai-comment";
+    aiBtn.innerHTML = memo.aiComment ? "🔄 AI 코멘트 다시 달기" : "✨ AI 코멘트 달기";
+    aiBtn.title = "Gemini AI가 이 메모에 따뜻한 응원 피드백을 남깁니다";
+    aiBtn.addEventListener("click", async function (e) {
+      e.stopPropagation();
+      await generateAiCommentForMemo(memo.id, memo.text, aiBtn);
+    });
+    div.appendChild(aiBtn);
   }
 
   return div;
@@ -404,6 +601,17 @@ function renderUserArea() {
       toggleBtn.title = "실습 테스트를 위해 교사와 학생 역할을 변경합니다";
       toggleBtn.addEventListener("click", toggleUserRole);
       wrapper.appendChild(toggleBtn);
+    }
+
+    // 교사(TEACHER) 전용: 전체 AI 코멘트 일괄 달기 버튼
+    if (isTeacherUser) {
+      const bulkAiBtn = document.createElement("button");
+      bulkAiBtn.type = "button";
+      bulkAiBtn.className = "btn-bulk-ai";
+      bulkAiBtn.innerHTML = "✨ 전체 AI 코멘트 달기";
+      bulkAiBtn.title = "코멘트가 없는 모든 학생 메모에 AI 코멘트를 일괄 생성합니다";
+      bulkAiBtn.addEventListener("click", handleBulkAiComments);
+      wrapper.appendChild(bulkAiBtn);
     }
 
     const logoutBtn = document.createElement("button");

@@ -245,6 +245,100 @@
       font-weight: 700;
     }
 
+    /* 교사 전용: 전체 AI 코멘트 달기 버튼 */
+    .btn-bulk-ai {
+      background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 16px;
+      padding: 5px 13px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(108, 92, 231, 0.25);
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .btn-bulk-ai:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(108, 92, 231, 0.35);
+    }
+
+    .btn-bulk-ai:disabled {
+      opacity: 0.6;
+      cursor: wait;
+      transform: none;
+    }
+
+    /* 메모 카드 내 AI 코멘트 말풍선 */
+    .memo-ai-comment {
+      margin-top: 12px;
+      padding: 10px 12px;
+      background: rgba(255, 255, 255, 0.82);
+      border-radius: 12px;
+      border: 1px solid rgba(108, 92, 231, 0.18);
+      box-shadow: 0 2px 6px rgba(108, 92, 231, 0.06);
+      font-size: 13px;
+      color: #4a4038;
+      backdrop-filter: blur(2px);
+    }
+
+    .ai-comment-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .ai-robot-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 10.5px;
+      font-weight: 700;
+      color: #6c5ce7;
+      background: #f0edff;
+      padding: 2px 7px;
+      border-radius: 8px;
+    }
+
+    .ai-comment-content {
+      font-size: 12.5px;
+      line-height: 1.5;
+      color: #3b322c;
+      word-break: break-word;
+    }
+
+    /* 개별 메모 교사용 AI 코멘트 달기 버튼 */
+    .btn-ai-comment {
+      margin-top: 8px;
+      align-self: flex-start;
+      background: #f8f6ff;
+      border: 1px dashed #b2a4ff;
+      color: #5f3dc4;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .btn-ai-comment:hover {
+      background: #6c5ce7;
+      border-color: #6c5ce7;
+      color: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(108, 92, 231, 0.22);
+    }
+
+    .btn-ai-comment:disabled {
+      opacity: 0.6;
+      cursor: wait;
+      transform: none;
+    }
+
     /* 메모 쓰는 칸 (중앙 정렬 카드형) */
     #writer {
       width: 100%;
