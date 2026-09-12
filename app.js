@@ -45,6 +45,11 @@ const provider = new GoogleAuthProvider();
 let currentUser = null;
 let currentRole = "STUDENT"; // 기본값은 STUDENT (학생), 교사는 TEACHER
 
+// 교사 관리자 이메일 목록 (전체 관리자 권한 부여)
+const TEACHER_EMAILS = [
+  "altheakim261@gmail.com"
+];
+
 // 교사로 사전 지정할 UID 목록 (필요 시 교사 계정의 UID를 여기에 추가할 수 있습니다)
 const TEACHER_UIDS = [];
 
@@ -56,26 +61,31 @@ async function syncUserRole(user) {
     return;
   }
 
+  // 관리자 이메일(altheakim261@gmail.com)인 경우 교사(TEACHER) 권한 자동 부여
+  const isTeacherByEmail = user.email && TEACHER_EMAILS.includes(user.email.toLowerCase());
+
   try {
     const userRef = doc(db, "users", user.uid);
     const userSnap = await getDoc(userRef);
 
     if (userSnap.exists()) {
       const data = userSnap.data();
-      currentRole = data.role || (TEACHER_UIDS.includes(user.uid) ? "TEACHER" : "STUDENT");
+      currentRole = data.role || (isTeacherByEmail ? "TEACHER" : (TEACHER_UIDS.includes(user.uid) ? "TEACHER" : "STUDENT"));
     } else {
-      // 신규 사용자인 경우 기본 역할(사전 지정 UID 여부에 따라 TEACHER 또는 STUDENT)로 프로필 생성
-      currentRole = TEACHER_UIDS.includes(user.uid) ? "TEACHER" : "STUDENT";
+      // 신규 사용자인 경우 프로필 문서 생성
+      currentRole = isTeacherByEmail ? "TEACHER" : (TEACHER_UIDS.includes(user.uid) ? "TEACHER" : "STUDENT");
       await setDoc(userRef, {
         uid: user.uid,
         userName: user.displayName || "사용자",
+        email: user.email || "",
         role: currentRole,
         createdAt: Date.now()
       });
     }
   } catch (error) {
-    console.warn("사용자 역할 동기화 중 오류 (기본 STUDENT 적용):", error);
-    currentRole = TEACHER_UIDS.includes(user.uid) ? "TEACHER" : "STUDENT";
+    console.warn("사용자 역할 동기화 중 오류:", error);
+    // Firestore 통신 실패 시에도 관리자 이메일이면 즉시 교사 권한 부여
+    currentRole = isTeacherByEmail ? "TEACHER" : (TEACHER_UIDS.includes(user.uid) ? "TEACHER" : "STUDENT");
   }
 }
 
@@ -83,12 +93,14 @@ async function syncUserRole(user) {
 async function toggleUserRole() {
   if (!currentUser) return;
   const targetRole = currentRole === "TEACHER" ? "STUDENT" : "TEACHER";
+  const isTeacherByEmail = currentUser.email && TEACHER_EMAILS.includes(currentUser.email.toLowerCase());
 
   try {
     const userRef = doc(db, "users", currentUser.uid);
     await setDoc(userRef, {
       uid: currentUser.uid,
       userName: currentUser.displayName || "사용자",
+      email: currentUser.email || "",
       role: targetRole,
       updatedAt: Date.now()
     }, { merge: true });
@@ -99,7 +111,15 @@ async function toggleUserRole() {
     alert(`역할이 [${targetRole === "TEACHER" ? "🍎 교사(TEACHER)" : "🌱 학생(STUDENT)"}]로 변경되었습니다!`);
   } catch (error) {
     console.error("역할 변경 실패:", error);
-    alert("역할 변경에 실패했습니다: " + error.message);
+    // 관리자 이메일 계정인 경우, 콘솔에 아직 규칙이 적용되지 않았더라도 로컬에서 바로 교사 역할을 활성화합니다
+    if (isTeacherByEmail) {
+      currentRole = targetRole;
+      renderUserArea();
+      render();
+      alert(`[알림] 관리자 계정(${currentUser.email})으로 확인되어 [${targetRole === "TEACHER" ? "🍎 교사(전체 관리자)" : "🌱 학생"}] 모드로 전환되었습니다!\n\n💡 Firestore의 영구 저장을 위해 Firebase 콘솔의 Firestore [규칙] 탭에서 최신 규칙을 게시(Publish)해 주세요.`);
+    } else {
+      alert("역할 변경에 실패했습니다: " + error.message + "\n\n💡 Firebase 콘솔의 Firestore 규칙(Rules) 탭에 최신 보안 규칙을 게시(Publish)했는지 확인해 주세요.");
+    }
   }
 }
 
@@ -350,10 +370,13 @@ function renderUserArea() {
     const wrapper = document.createElement("div");
     wrapper.className = "user-logged-in";
 
+    const isSuperAdmin = currentUser.email && TEACHER_EMAILS.includes(currentUser.email.toLowerCase());
     const isTeacherUser = currentRole === "TEACHER";
-    const roleBadgeHtml = isTeacherUser
-      ? `<span class="badge-role badge-teacher">🍎 교사 (TEACHER)</span>`
-      : `<span class="badge-role badge-student">🌱 학생 (STUDENT)</span>`;
+    const roleBadgeHtml = isSuperAdmin && isTeacherUser
+      ? `<span class="badge-role badge-teacher">👑 관리자 교사 (TEACHER)</span>`
+      : (isTeacherUser
+          ? `<span class="badge-role badge-teacher">🍎 교사 (TEACHER)</span>`
+          : `<span class="badge-role badge-student">🌱 학생 (STUDENT)</span>`);
 
     const greeting = document.createElement("div");
     greeting.className = "user-greeting";
