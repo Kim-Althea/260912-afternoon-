@@ -106,9 +106,11 @@
 
     .user-logged-in {
       display: inline-flex;
+      flex-wrap: wrap;
       align-items: center;
-      gap: 12px;
-      padding: 8px 18px;
+      justify-content: center;
+      gap: 10px;
+      padding: 8px 16px;
       background: rgba(255, 255, 255, 0.95);
       border: 1.5px solid #e5dbd0;
       border-radius: 30px;
@@ -117,13 +119,82 @@
     }
 
     .user-greeting {
-      font-size: 14px;
+      font-size: 13px;
       color: #4a4038;
       font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
     }
 
     .user-greeting strong {
       color: #ff6b6b;
+    }
+
+    /* 역할 표시 뱃지 (교사 / 학생) */
+    .badge-role {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      vertical-align: middle;
+    }
+
+    .badge-teacher {
+      background: #ffe8e8;
+      color: #e63946;
+      border: 1px solid #ffccd2;
+    }
+
+    .badge-student {
+      background: #e8f7ec;
+      color: #2b8a3e;
+      border: 1px solid #c3ebc9;
+    }
+
+    /* UID 표시 알약 */
+    .user-uid-pill {
+      font-size: 11px;
+      color: #7a6e66;
+      background: #f4ede4;
+      padding: 3px 8px;
+      border-radius: 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.2s;
+      border: 1px solid #e8ded2;
+    }
+
+    .user-uid-pill:hover {
+      background: #eae0d3;
+      color: #3e3835;
+      transform: translateY(-1px);
+    }
+
+    .user-uid-pill code {
+      font-family: monospace;
+      font-weight: 600;
+      color: #594d44;
+    }
+
+    /* 교사 ↔ 학생 실습용 전환 버튼 */
+    .btn-role-toggle {
+      background: #fff6e6;
+      border: 1px solid #ffd8a8;
+      border-radius: 14px;
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #d9480f;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .btn-role-toggle:hover {
+      background: #ffe8cc;
+      transform: translateY(-1px);
     }
 
     .btn-logout {
@@ -150,6 +221,28 @@
       color: #8c7e75;
       font-weight: 600;
       text-align: right;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 4px;
+    }
+
+    .memo-role-teacher {
+      background: #ffe3e3;
+      color: #c92a2a;
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .memo-role-student {
+      background: #d3f9d8;
+      color: #2b8a3e;
+      padding: 1px 6px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-weight: 700;
     }
 
     /* 메모 쓰는 칸 (중앙 정렬 카드형) */
