@@ -41,8 +41,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 무료 티어로 제공되는 최신 Gemini 2.0 Flash 모델 사용
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    // 무료 티어로 제공되는 최신 Gemini 3.6 Flash 모델 사용
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${apiKey}`;
 
     const payload = {
       system_instruction: {

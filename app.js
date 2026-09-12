@@ -201,8 +201,8 @@ async function fallbackLocalGemini(text) {
     localStorage.setItem("LOCAL_GEMINI_API_KEY", localKey.trim());
   }
 
-  // Google Gemini API 최신 무료 모델(gemini-2.0-flash) 직접 호출
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${localKey.trim()}`;
+  // Google Gemini API 최신 무료 모델(gemini-3.6-flash) 직접 호출
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${localKey.trim()}`;
   const payload = {
     system_instruction: {
       parts: [
