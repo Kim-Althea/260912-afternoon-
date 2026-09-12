@@ -125,9 +125,20 @@ input.addEventListener("keydown", async function (e) {
     const text = input.value.trim();
     if (text === "") return;
 
-    await addMemo(text);
-    input.value = "";
-    await render();
+    // 규칙에 맞춰 5글자 이상인지 확인합니다
+    if (text.length < 5) {
+      alert("메모는 5글자 이상 작성해주세요! ✏️");
+      return;
+    }
+
+    try {
+      await addMemo(text);
+      input.value = "";
+      await render();
+    } catch (error) {
+      console.error("메모 저장 실패:", error);
+      alert("메모를 저장하지 못했습니다 (규칙 위반 또는 권한 오류): " + error.message);
+    }
   }
 });
 
@@ -138,9 +149,20 @@ if (submitBtn) {
     const text = input.value.trim();
     if (text === "") return;
 
-    await addMemo(text);
-    input.value = "";
-    await render();
+    // 규칙에 맞춰 5글자 이상인지 확인합니다
+    if (text.length < 5) {
+      alert("메모는 5글자 이상 작성해주세요! ✏️");
+      return;
+    }
+
+    try {
+      await addMemo(text);
+      input.value = "";
+      await render();
+    } catch (error) {
+      console.error("메모 저장 실패:", error);
+      alert("메모를 저장하지 못했습니다 (규칙 위반 또는 권한 오류): " + error.message);
+    }
   });
 }
 
