@@ -110,35 +110,41 @@ async function toggleUserRole() {
 
 // 메모를 읽어 옵니다.
 // Firestore의 memos 컬렉션에서 가져오며, 순서는 orderBy("createdAt") 으로 맞춥니다.
+// 백엔드 2: 메모를 불러올 때 로그인한 사람의 uid와 글쓴이(userName) 정보도 함께 가져옵니다.
 async function loadMemos() {
   const q = query(collection(db, "memos"), orderBy("createdAt"));
   const querySnapshot = await getDocs(q);
   const memos = [];
   querySnapshot.forEach(function (docSnap) {
+    const data = docSnap.data();
     memos.push({
       id: docSnap.id,
-      ...docSnap.data()
+      text: data.text,
+      createdAt: data.createdAt,
+      uid: data.uid,           // 작성자 uid 가져오기
+      userName: data.userName, // 글쓴이(이름) 가져오기
+      role: data.role          // 역할(TEACHER 또는 STUDENT) 가져오기
     });
   });
   return memos;
 }
 
 // 메모를 새로 씁니다.
-// 백엔드 2: 누가 썼는지(uid, userName, role)를 함께 저장합니다.
-// - 학생(STUDENT): 자기 본인 UID로만 저장할 수 있습니다.
-// - 교사(TEACHER): 모든 권한이 부여됩니다.
+// 백엔드 2: 로그인하지 않은 사람은 메모를 아예 쓰지 못하게 막고,
+// 메모를 저장할 때 로그인한 사람의 uid와 글쓴이(userName)를 함께 저장합니다.
 async function addMemo(text) {
+  // 로그인하지 않은 사람은 메모 저장을 차단합니다.
   if (!currentUser) {
-    alert("로그인 후 메모를 남길 수 있습니다! 상단의 구글 로그인 버튼을 눌러주세요. 🔒");
+    alert("로그인 후 메모를 작성할 수 있습니다! 먼저 상단의 구글 로그인을 진행해 주세요. 🔒");
     return;
   }
 
   await addDoc(collection(db, "memos"), {
     text: text,
     createdAt: Date.now(),
-    uid: currentUser.uid,
-    userName: currentUser.displayName || "익명",
-    role: currentRole // 작성 시점의 역할 (TEACHER 또는 STUDENT)
+    uid: currentUser.uid,                         // 로그인한 사람의 uid
+    userName: currentUser.displayName || "익명", // 글쓴이(작성자) 이름
+    role: currentRole                             // 교사/학생 역할
   });
 }
 
@@ -147,6 +153,7 @@ async function addMemo(text) {
 async function deleteMemo(id) {
   await deleteDoc(doc(db, "memos", id));
 }
+
 
 
 // ===================================================
@@ -241,6 +248,12 @@ input.addEventListener("keydown", async function (e) {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
 
+    // 로그인하지 않은 사람은 메모 작성을 차단합니다
+    if (!currentUser) {
+      alert("로그인하지 않은 사용자는 메모를 작성할 수 없습니다! 상단의 구글 로그인을 먼저 진행해 주세요. 🔒");
+      return;
+    }
+
     const text = input.value.trim();
     if (text === "") return;
 
@@ -269,6 +282,12 @@ input.addEventListener("keydown", async function (e) {
 const submitBtn = document.getElementById("submitBtn");
 if (submitBtn) {
   submitBtn.addEventListener("click", async function () {
+    // 로그인하지 않은 사람은 메모 작성을 차단합니다
+    if (!currentUser) {
+      alert("로그인하지 않은 사용자는 메모를 작성할 수 없습니다! 상단의 구글 로그인을 먼저 진행해 주세요. 🔒");
+      return;
+    }
+
     const text = input.value.trim();
     if (text === "") return;
 
@@ -292,6 +311,7 @@ if (submitBtn) {
     }
   });
 }
+
 
 
 // ===================================================
@@ -370,6 +390,14 @@ function renderUserArea() {
 
     userArea.appendChild(wrapper);
 
+    // 로그인한 사용자는 메모 작성 가능 (입력창 활성화)
+    input.disabled = false;
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.style.opacity = "1";
+      submitBtn.style.cursor = "pointer";
+    }
+
     // 역할별 안내 문구
     if (isTeacherUser) {
       input.placeholder = "선생님, 남기고 싶은 메모를 적어보세요! (교사는 전체 관리 및 삭제 권한이 있습니다)";
@@ -391,7 +419,16 @@ function renderUserArea() {
     `;
     loginBtn.addEventListener("click", login);
     userArea.appendChild(loginBtn);
-    input.placeholder = "🔒 로그인 후 메모를 작성할 수 있습니다 (상단 구글 로그인 클릭)";
+
+    // 로그인하지 않은 사람은 메모를 아예 작성할 수 없도록 비활성화합니다
+    input.disabled = true;
+    input.value = "";
+    input.placeholder = "🔒 로그인한 사용자만 메모를 작성할 수 있습니다 (상단 구글 로그인 클릭)";
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.style.opacity = "0.5";
+      submitBtn.style.cursor = "not-allowed";
+    }
   }
 }
 
