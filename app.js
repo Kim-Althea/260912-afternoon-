@@ -395,14 +395,16 @@ function renderUserArea() {
     });
     wrapper.appendChild(uidSpan);
 
-    // 교사 ↔ 학생 역할 전환 버튼 (실습 테스트용)
-    const toggleBtn = document.createElement("button");
-    toggleBtn.type = "button";
-    toggleBtn.className = "btn-role-toggle";
-    toggleBtn.innerHTML = isTeacherUser ? "🌱 학생 모드로 전환" : "🍎 교사 모드로 전환";
-    toggleBtn.title = "실습 테스트를 위해 교사와 학생 역할을 변경합니다";
-    toggleBtn.addEventListener("click", toggleUserRole);
-    wrapper.appendChild(toggleBtn);
+    // 교사 ↔ 학생 역할 전환 버튼 (관리자 교사에게만 실습 테스트용으로 제공)
+    if (isSuperAdmin) {
+      const toggleBtn = document.createElement("button");
+      toggleBtn.type = "button";
+      toggleBtn.className = "btn-role-toggle";
+      toggleBtn.innerHTML = isTeacherUser ? "🌱 학생 모드로 전환" : "🍎 교사 모드로 전환";
+      toggleBtn.title = "실습 테스트를 위해 교사와 학생 역할을 변경합니다";
+      toggleBtn.addEventListener("click", toggleUserRole);
+      wrapper.appendChild(toggleBtn);
+    }
 
     const logoutBtn = document.createElement("button");
     logoutBtn.type = "button";

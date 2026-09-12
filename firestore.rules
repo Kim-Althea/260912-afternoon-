@@ -3,27 +3,30 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // 로그인 여부 확인
+    // 1. 로그인 여부 확인
     function isAuthenticated() {
       return request.auth != null;
     }
 
-    // 사용자의 역할을 조회하는 헬퍼 함수 (/users/{uid} 문서의 role 필드)
+    // 2. 관리자 교사 계정 확인 (Google 이메일 인증 완료 필수)
+    // altheakim261@gmail.com 계정에 최상위 관리자 권한을 부여합니다.
+    function isSuperAdmin() {
+      return isAuthenticated() &&
+        request.auth.token.email == 'altheakim261@gmail.com' &&
+        request.auth.token.email_verified == true;
+    }
+
+    // 3. 사용자의 Firestore 역할 조회 (/users/{uid} 문서의 role 필드)
     function getUserRole() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
     }
 
-    // 관리자 교사 이메일 확인 (altheakim261@gmail.com 에게 전체 관리자 권한 부여)
-    function isTeacherEmail() {
-      return request.auth.token.email == 'altheakim261@gmail.com';
-    }
-
-    // 교사(TEACHER) 권한 확인 함수:
-    // 1) altheakim261@gmail.com 계정이거나,
-    // 2) /users/{uid} 문서에 role이 'TEACHER'로 등록되어 있는지 확인합니다.
+    // 4. 교사(TEACHER) 권한 확인 함수:
+    // 슈퍼 관리자(altheakim261@gmail.com)이거나,
+    // 관리자가 승인하여 /users/{uid} 문서에 role이 'TEACHER'로 등록되어 있는 경우
     function isTeacher() {
       return isAuthenticated() && (
-        isTeacherEmail() ||
+        isSuperAdmin() ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserRole() == 'TEACHER')
       );
     }
@@ -32,34 +35,40 @@ service cloud.firestore {
     // 담벼락 메모 (/memos/{memoId}) 보안 규칙
     // ===================================================
     match /memos/{memoId} {
-      // 1. 조회: 누구나 담벼락 메모를 읽을 수 있습니다.
+      // 1) 조회: 누구나 담벼락 메모를 읽을 수 있습니다.
       allow read: if true;
 
-      // 2. 생성:
-      // - 교사(TEACHER): 모든 권한 (글자 수 제한 없이 등록 가능)
-      // - 학생(STUDENT): 본인 UID로만 등록 가능 (타인 사칭 차단, 5~49글자)
+      // 2) 생성:
+      // - 교사(TEACHER): 제한 없이 자유롭게 작성 가능
+      // - 학생(STUDENT): 본인 UID 일치 + 5~49자 글자 수 준수 + 교사(TEACHER) 뱃지 사칭 차단
       allow create: if isAuthenticated() && (
         isTeacher() || (
           request.resource.data.uid == request.auth.uid &&
           request.resource.data.text is string &&
           request.resource.data.text.size() >= 5 &&
-          request.resource.data.text.size() < 50
+          request.resource.data.text.size() < 50 &&
+          (!('role' in request.resource.data) || request.resource.data.role == 'STUDENT')
         )
       );
 
-      // 3. 수정:
+      // 3) 수정:
       // - 교사(TEACHER): 모든 메모 수정 가능
-      // - 학생(STUDENT): 본인 메모만 수정 가능 (타인의 메모는 건드릴 수 없음)
+      // - 학생(STUDENT): 본인 메모만 수정 가능 + 작성자(uid) 및 작성일시(createdAt) 변조 금지 + 5~49자 글자 수 준수
       allow update: if isAuthenticated() && (
         isTeacher() || (
           resource.data.uid == request.auth.uid &&
-          request.resource.data.uid == request.auth.uid
+          request.resource.data.uid == resource.data.uid &&
+          request.resource.data.createdAt == resource.data.createdAt &&
+          request.resource.data.text is string &&
+          request.resource.data.text.size() >= 5 &&
+          request.resource.data.text.size() < 50 &&
+          (!('role' in request.resource.data) || request.resource.data.role == 'STUDENT')
         )
       );
 
-      // 4. 삭제:
+      // 4) 삭제:
       // - 교사(TEACHER): 모든 메모 삭제 가능 (전체 관리 권한)
-      // - 학생(STUDENT): 자신이 쓴 메모(uid 일치)만 삭제 가능, 타인 메모 삭제 절대 불가
+      // - 학생(STUDENT): 자신이 작성한 메모만 삭제 가능 (타인의 메모는 삭제 불가)
       allow delete: if isAuthenticated() && (
         isTeacher() || resource.data.uid == request.auth.uid
       );
@@ -69,9 +78,24 @@ service cloud.firestore {
     // 사용자 프로필 (/users/{userId}) 보안 규칙
     // ===================================================
     match /users/{userId} {
-      allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && (isTeacher() || request.auth.uid == userId);
+      // 1) 조회: 본인 프로필이거나 교사만 조회 가능 (개인정보 및 전체 UID 목록 무단 열람 방지)
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isTeacher());
+
+      // 2) 생성 및 수정:
+      // - 슈퍼 관리자(altheakim261@gmail.com): 누구의 역할이든 TEACHER / STUDENT 부여 가능
+      // - 일반 사용자: 본인 프로필만 생성/수정 가능하며, 오직 role이 'STUDENT'일 때만 허용!
+      //   (★ 콘솔에서 임의로 role을 'TEACHER'로 조작하여 권한을 탈취하는 행위 원천 차단 ★)
+      allow create, update: if isAuthenticated() && (
+        isSuperAdmin() || (
+          request.auth.uid == userId &&
+          request.resource.data.role == 'STUDENT'
+        )
+      );
+
+      // 3) 삭제: 슈퍼 관리자만 삭제 가능
+      allow delete: if isSuperAdmin();
     }
   }
 }
+
 
