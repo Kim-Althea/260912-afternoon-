@@ -1,0 +1,10 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 우리 반 담벼락: 모든 사용자가 메모를 읽고 쓸 수 있도록 허용합니다.
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}
