@@ -72,20 +72,84 @@
       font-weight: 500;
     }
 
-    /* 로그인 버튼이 들어올 자리 */
+    /* 로그인 버튼 및 사용자 영역 (백엔드 2) */
     #userArea {
       margin-bottom: 24px;
-      padding: 8px 18px;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1.5px dashed #e2d7cd;
-      border-radius: 30px;
-      color: #8c827a;
-      font-size: 13px;
-      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+    }
+
+    .btn-google {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
+      padding: 10px 22px;
+      background: #ffffff;
+      border: 1.5px solid #e8dfd5;
+      border-radius: 28px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #3e3835;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(160, 130, 105, 0.1);
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .btn-google:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(160, 130, 105, 0.18);
+      border-color: #ffd166;
+    }
+
+    .user-logged-in {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 18px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 1.5px solid #e5dbd0;
+      border-radius: 30px;
+      box-shadow: 0 4px 12px rgba(160, 130, 105, 0.08);
       backdrop-filter: blur(4px);
+    }
+
+    .user-greeting {
+      font-size: 14px;
+      color: #4a4038;
+      font-weight: 500;
+    }
+
+    .user-greeting strong {
+      color: #ff6b6b;
+    }
+
+    .btn-logout {
+      background: #f1ede8;
+      border: none;
+      border-radius: 16px;
+      padding: 5px 12px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #7a6e66;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+
+    .btn-logout:hover {
+      background: #ff6b6b;
+      color: #ffffff;
+    }
+
+    .memo-author {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #8c7e75;
+      font-weight: 600;
+      text-align: right;
     }
 
     /* 메모 쓰는 칸 (중앙 정렬 카드형) */
@@ -280,8 +344,8 @@
       <p class="subtitle">친구들과 나누고 싶은 생각이나 이야기를 자유롭게 붙여보세요!</p>
     </header>
 
-    <!-- 백엔드 2 시간에 여기에 로그인 버튼과 내 이름이 들어옵니다 -->
-    <div id="userArea">🔒 아직 로그인 기능이 없습니다.</div>
+    <!-- 백엔드 2: 로그인 버튼과 사용자 이름이 표시되는 영역 -->
+    <div id="userArea"></div>
 
     <div id="writer">
       <textarea id="input" rows="3" maxlength="49" placeholder="남기고 싶은 메모를 5자 이상 50자 미만으로 적어보세요... (Shift + Enter로 줄바꿈)"></textarea>
