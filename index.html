@@ -5,37 +5,295 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>우리 반 담벼락</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📌</text></svg>">
+  <!-- 귀엽고 아기자기한 폰트 (Gaegu & Noto Sans KR) 불러오기 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@400;700&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: sans-serif; margin: 20px; }
-    h1 { font-size: 24px; }
-    .notice { background: #ffe9e9; padding: 10px; }
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 40px 16px 80px;
+      min-height: 100vh;
+      background-color: #fcf9f2;
+      background-image: radial-gradient(#e8dacb 1.2px, transparent 1.2px);
+      background-size: 24px 24px;
+      font-family: 'Noto Sans KR', -apple-system, sans-serif;
+      color: #3e3835;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* 화면 중앙 배치 컨테이너 */
+    .container {
+      width: 100%;
+      max-width: 860px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* 상단 헤더 영역 */
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 5px 14px;
+      background: #ffede8;
+      color: #ff6b6b;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 8px rgba(255, 107, 107, 0.15);
+    }
+
+    h1 {
+      font-family: 'Gaegu', cursive, sans-serif;
+      font-size: 46px;
+      font-weight: 700;
+      color: #332d29;
+      margin: 0 0 6px 0;
+      letter-spacing: -0.5px;
+      text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.8);
+    }
+
+    .subtitle {
+      margin: 0;
+      font-size: 15px;
+      color: #8c7e75;
+      font-weight: 500;
+    }
 
     /* 로그인 버튼이 들어올 자리 */
-    #userArea { margin: 10px 0; color: #666; }
+    #userArea {
+      margin-bottom: 24px;
+      padding: 8px 18px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1.5px dashed #e2d7cd;
+      border-radius: 30px;
+      color: #8c827a;
+      font-size: 13px;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(4px);
+    }
 
-    /* 메모 쓰는 칸 */
-    #writer { margin: 16px 0; }
-    #writer textarea { width: 400px; font-size: 16px; }
+    /* 메모 쓰는 칸 (중앙 정렬 카드형) */
+    #writer {
+      width: 100%;
+      max-width: 620px;
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 20px 22px 14px;
+      box-shadow: 0 10px 28px rgba(160, 130, 105, 0.12);
+      border: 2px solid #f2e9de;
+      margin-bottom: 36px;
+      transition: all 0.25s ease;
+    }
 
-    /* 메모가 붙는 담벼락 */
-    #wall { display: flex; flex-wrap: wrap; gap: 10px; }
-    .memo { border: 1px solid #ddd; background: #fffde7; padding: 10px; width: 200px; font-size: 15px; }
-    .memo button { float: right; }
+    #writer:focus-within {
+      border-color: #ffc048;
+      box-shadow: 0 12px 32px rgba(255, 192, 72, 0.25);
+      transform: translateY(-2px);
+    }
+
+    #writer textarea {
+      width: 100%;
+      border: none;
+      outline: none;
+      resize: none;
+      font-size: 16px;
+      font-family: 'Noto Sans KR', sans-serif;
+      line-height: 1.6;
+      color: #3e3835;
+      background: transparent;
+      padding: 0;
+    }
+
+    #writer textarea::placeholder {
+      color: #b8aea5;
+    }
+
+    .writer-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #f7f1e9;
+    }
+
+    .tip {
+      font-size: 12px;
+      color: #a39990;
+    }
+
+    .btn-submit {
+      background: linear-gradient(135deg, #ff9f43 0%, #ff6b6b 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 14px;
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(255, 107, 107, 0.28);
+      transition: all 0.2s ease;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-submit:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(255, 107, 107, 0.38);
+    }
+
+    .btn-submit:active {
+      transform: translateY(0);
+    }
+
+    /* 메모가 붙는 담벼락 (중앙 반응형 그리드) */
+    #wall {
+      width: 100%;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 22px;
+      justify-content: center;
+    }
+
+    /* 알록달록 파스텔 포스트잇 스타일 */
+    .memo {
+      position: relative;
+      border-radius: 4px;
+      padding: 26px 18px 18px;
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 150px;
+      box-shadow: 0 6px 16px rgba(120, 100, 80, 0.08);
+      transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s ease;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      word-break: break-word;
+      cursor: default;
+    }
+
+    /* 상단 귀여운 반투명 마스킹 테이프 */
+    .memo::before {
+      content: "";
+      position: absolute;
+      top: -9px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 58px;
+      height: 18px;
+      background: rgba(255, 255, 255, 0.72);
+      border-radius: 2px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      backdrop-filter: blur(1px);
+    }
+
+    /* 5가지 따뜻한 파스텔 테마와 자연스러운 기울임 */
+    .memo:nth-child(5n+1) { background: #fff9be; transform: rotate(-1.5deg); }
+    .memo:nth-child(5n+2) { background: #ffe6ec; transform: rotate(1.2deg); }
+    .memo:nth-child(5n+3) { background: #e2f7de; transform: rotate(-0.8deg); }
+    .memo:nth-child(5n+4) { background: #e0f2fe; transform: rotate(1.8deg); }
+    .memo:nth-child(5n+5) { background: #fae8ff; transform: rotate(-1.2deg); }
+
+    .memo:hover {
+      transform: translateY(-8px) scale(1.03) rotate(0deg) !important;
+      box-shadow: 0 16px 30px rgba(120, 100, 80, 0.15);
+      z-index: 10;
+    }
+
+    .memo span {
+      flex: 1;
+      font-size: 15px;
+      color: #38322e;
+      font-weight: 500;
+      white-space: pre-wrap;
+    }
+
+    /* 삭제 버튼 */
+    .memo button {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: rgba(0, 0, 0, 0.05);
+      border-radius: 50%;
+      color: #7a6e66;
+      font-size: 15px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      opacity: 0.5;
+    }
+
+    .memo:hover button {
+      opacity: 1;
+    }
+
+    .memo button:hover {
+      background: #ff6b6b;
+      color: #ffffff;
+      transform: rotate(90deg) scale(1.1);
+    }
+
+    /* 등록된 메모가 없을 때 안내 */
+    .empty-wall {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 50px 20px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 20px;
+      border: 2px dashed #ebdcd0;
+      color: #9c8e82;
+      font-size: 15px;
+      line-height: 1.8;
+      box-shadow: 0 4px 14px rgba(160, 130, 105, 0.05);
+    }
   </style>
 </head>
 <body>
 
-  <h1>우리 반 담벼락</h1>
+  <div class="container">
+    <header class="header">
+      <div class="badge">🏫 우리들의 따뜻한 공간</div>
+      <h1>📌 우리 반 담벼락</h1>
+      <p class="subtitle">친구들과 나누고 싶은 생각이나 이야기를 자유롭게 붙여보세요!</p>
+    </header>
 
-  <!-- 백엔드 2 시간에 여기에 로그인 버튼과 내 이름이 들어옵니다 -->
-  <div id="userArea">아직 로그인 기능이 없습니다.</div>
+    <!-- 백엔드 2 시간에 여기에 로그인 버튼과 내 이름이 들어옵니다 -->
+    <div id="userArea">🔒 아직 로그인 기능이 없습니다.</div>
 
-  <div id="writer">
-    <textarea id="input" rows="3" placeholder="메모를 쓰고 엔터"></textarea>
+    <div id="writer">
+      <textarea id="input" rows="3" placeholder="남기고 싶은 메모를 적어보세요... (Shift + Enter로 줄바꿈)"></textarea>
+      <div class="writer-footer">
+        <span class="tip">💡 Enter 키를 누르면 담벼락에 바로 등록됩니다</span>
+        <button id="submitBtn" type="button" class="btn-submit">등록하기 ✨</button>
+      </div>
+    </div>
+
+    <!-- 메모는 app.js가 그립니다 -->
+    <div id="wall"></div>
   </div>
-
-  <!-- 메모는 app.js가 그립니다 -->
-  <div id="wall"></div>
 
   <!--
     type="module" 로 불러옵니다.

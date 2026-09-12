@@ -75,6 +75,16 @@ async function render() {
   wall.innerHTML = "";
 
   const memos = await loadMemos();
+
+  // 등록된 메모가 없을 때 친절하고 아기자기한 안내 표시
+  if (memos.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "empty-wall";
+    empty.innerHTML = "💭 아직 등록된 메모가 없어요.<br>친구들과 나누고 싶은 첫 번째 이야기를 남겨보세요! ✨";
+    wall.appendChild(empty);
+    return;
+  }
+
   memos.forEach(function (memo) {
     wall.appendChild(makeMemo(memo));
   });
@@ -120,6 +130,19 @@ input.addEventListener("keydown", async function (e) {
     await render();
   }
 });
+
+// '등록하기' 버튼 클릭 시에도 메모를 추가합니다
+const submitBtn = document.getElementById("submitBtn");
+if (submitBtn) {
+  submitBtn.addEventListener("click", async function () {
+    const text = input.value.trim();
+    if (text === "") return;
+
+    await addMemo(text);
+    input.value = "";
+    await render();
+  });
+}
 
 
 // 첫 화면 그리기
