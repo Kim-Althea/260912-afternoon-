@@ -125,9 +125,13 @@ input.addEventListener("keydown", async function (e) {
     const text = input.value.trim();
     if (text === "") return;
 
-    // 규칙에 맞춰 5글자 이상인지 확인합니다
+    // 규칙에 맞춰 5글자 이상 50글자 미만인지 확인합니다
     if (text.length < 5) {
       alert("메모는 5글자 이상 작성해주세요! ✏️");
+      return;
+    }
+    if (text.length >= 50) {
+      alert("메모는 50글자 미만으로 작성해주세요! (현재 " + text.length + "자) ⚠️");
       return;
     }
 
@@ -149,9 +153,13 @@ if (submitBtn) {
     const text = input.value.trim();
     if (text === "") return;
 
-    // 규칙에 맞춰 5글자 이상인지 확인합니다
+    // 규칙에 맞춰 5글자 이상 50글자 미만인지 확인합니다
     if (text.length < 5) {
       alert("메모는 5글자 이상 작성해주세요! ✏️");
+      return;
+    }
+    if (text.length >= 50) {
+      alert("메모는 50글자 미만으로 작성해주세요! (현재 " + text.length + "자) ⚠️");
       return;
     }
 

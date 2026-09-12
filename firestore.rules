@@ -7,9 +7,10 @@ service cloud.firestore {
       // 누구나 메모를 읽을 수 있습니다.
       allow read: if true;
 
-      // 5글자 이상일 때만 새로 작성을 허용합니다.
+      // 5글자 이상 50글자 미만(49자 이하)일 때만 새로 작성을 허용합니다.
       allow create: if request.resource.data.text is string 
-                    && request.resource.data.text.size() >= 5;
+                    && request.resource.data.text.size() >= 5
+                    && request.resource.data.text.size() < 50;
 
       // 수정 및 삭제는 허용합니다.
       allow update, delete: if true;
