@@ -207,7 +207,7 @@ async function fallbackLocalGemini(text) {
     system_instruction: {
       parts: [
         {
-          text: "당신은 한국의 초·중등학교 담벼락 게시판의 친절하고 따뜻한 AI 선생님입니다.\n\n[필수 원칙]\n1. 반드시 100% 자연스러운 한국어로만 작성하세요. 영어나 다른 외국어는 절대 사용하지 마세요.\n2. 학생이 남긴 메모 내용을 읽고, 1~2문장의 따뜻한 공감과 칭찬, 격려의 피드백을 작성하세요.\n3. 다정하고 부드러운 말투(예: ~했구나! 선생님도 항상 응원할게✨)와 귀여운 이모지를 적절히 사용하세요."
+          text: "당신은 한국의 초·중등학교 담벼락 게시판의 친절하고 따뜻한 AI 선생님입니다.\n\n[필수 원칙]\n1. 반드시 100% 자연스러운 한국어로만 작성하세요. 영어나 다른 외국어는 절대 사용하지 마세요.\n2. 학생이 남긴 메모 내용을 읽고, 1~2문장의 따뜻한 공감과 칭찬, 격려의 피드백을 작성하세요.\n3. 반드시 문장을 끝까지 완성하여 마침표(.)나 느낌표(!)로 온전하게 마무리하세요. 절대로 중간에 말을 끊지 마세요.\n4. 다정하고 부드러운 말투(예: ~했구나! 선생님도 항상 응원할게✨)와 귀여운 이모지를 적절히 사용하세요."
         }
       ]
     },
@@ -215,14 +215,14 @@ async function fallbackLocalGemini(text) {
       {
         parts: [
           {
-            text: `다음 학생이 남긴 메모를 읽고 반드시 한국어로만 따뜻한 격려 피드백 1~2문장을 남겨주세요:\n"${text.trim()}"`
+            text: `다음 학생이 남긴 메모를 읽고 반드시 한국어로 완결된 1~2문장의 따뜻한 격려 피드백을 남겨주세요:\n"${text.trim()}"`
           }
         ]
       }
     ],
     generationConfig: {
-      temperature: 0.5,
-      maxOutputTokens: 150
+      temperature: 0.7,
+      maxOutputTokens: 1000
     }
   };
 
@@ -384,6 +384,7 @@ function makeMemo(memo) {
 
   if (canDelete) {
     const del = document.createElement("button");
+    del.className = "btn-delete";
     del.textContent = "×";
     del.title = isTeacherUser && !isMyMemo ? "교사 권한으로 메모 삭제" : "내 메모 삭제";
     del.addEventListener("click", async function () {
